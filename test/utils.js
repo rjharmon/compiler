@@ -29,6 +29,7 @@ import { Program } from "../src/program/Program.js"
  *   modules?: string[]
  *   inputs: UplcData[]
  *   output: HeliosTestOutput
+ *    fails?: boolean | RegExp
  * }} HeliosTest
  */
 
@@ -54,13 +55,24 @@ export function compileAndRunMany(testVector) {
  */
 export function compileAndRun(test) {
     it(test.description, () => {
-        const program = new Program(test.main, {
-            moduleSources: test.modules,
-            isTestnet: true
-        })
+        const initialTest = () => {
+            const program = new Program(test.main, {
+                moduleSources: test.modules,
+                isTestnet: true
+            })
 
-        const uplc0 = program.compile(false)
-
+            const uplc0 = program.compile(false)
+            return [program, uplc0]
+        }
+        if (true == test.fails) {
+            throws(initialTest)
+            return
+        } else if (test.fails) {
+            console.log("checking for failure message", test.fails)
+            throws(initialTest, test.fails)
+            return
+        }
+        const [program, uplc0] = initialTest()
         const args = test.inputs.map((d) => new UplcDataValue(d))
         const result0 = uplc0.eval(args)
 
@@ -227,7 +239,9 @@ export function evalTypes(test) {
             })
         }
 
-        if (test.fails) {
+        if ("string" == typeof test.fails) {
+            throws(construct, test.fails)
+        } else if (test.fails) {
             throws(construct)
         } else {
             construct()
