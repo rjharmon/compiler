@@ -117,7 +117,7 @@ export class StructStatement extends Statement {
 
                         return {
                             kind: "struct",
-                            format: this.#dataDef.hasTags()
+                            format: this.#dataDef.usesEncodingKeys()
                                 ? "map"
                                 : this.#dataDef.nFields == 1
                                   ? "singleton"
@@ -319,7 +319,7 @@ export class StructStatement extends Statement {
             this.#dataDef.toIR_is_valid_data()
         )
 
-        if (this.#dataDef.hasTags()) {
+        if (this.#dataDef.usesEncodingKeys()) {
             this.toIR_withTags(ctx, map)
         } else {
             this.toIR_withoutTags(ctx, map)

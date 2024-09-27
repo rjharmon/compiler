@@ -12,16 +12,21 @@ import { isDataType } from "../typecheck/index.js"
  * Single field in struct or enum member
  */
 export class DataField extends NameTypePair {
-    #tag
+    /**
+     * @readonly
+     * @private
+     * @type {Option<string>}
+     */
+    encodingKey
 
     /**
      * @param {Word} name
      * @param {Expr} typeExpr
-     * @param {Option<StringLiteral>} tag
+     * @param {Option<StringLiteral>} encodingKey
      */
-    constructor(name, typeExpr, tag = null) {
+    constructor(name, typeExpr, encodingKey = null) {
         super(name, typeExpr)
-        this.#tag = tag
+        this.encodingKey = encodingKey?.value
     }
 
     /**
@@ -35,15 +40,16 @@ export class DataField extends NameTypePair {
     /**
      * @returns {boolean}
      */
-    hasTag() {
-        return isSome(this.#tag)
+    hasEncodingKey() {
+        return isSome(this.encodingKey)
     }
 
     /**
      * @type {string}
      */
-    get tag() {
-        return this.#tag ? this.#tag.value : this.name.value
+    get encodedFieldName() {
+        // throw new Error("DataField.tag is deprecated, use DataField.encodingKey instead")
+        return this.encodingKey || this.name.value
     }
 
     /**
@@ -57,6 +63,9 @@ export class DataField extends NameTypePair {
         } else {
             const t = this.typeExpr.eval(scope)
 
+            // ??? push encodingKey into typeExpr ? else leave
+            // xxx probably best to keep it in fieldSchemas generated in parent DataDefinition,
+            //  as the encoding key isn't really type information.
             if (t.asDataType) {
                 const dt = t.asDataType
 

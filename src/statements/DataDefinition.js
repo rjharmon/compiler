@@ -71,8 +71,8 @@ export class DataDefinition {
         return this.#fields.map((f) => f.name.value)
     }
 
-    hasTags() {
-        return this.#fields.some((f) => f.hasTag())
+    usesEncodingKeys() {
+        return this.#fields.some((f) => f.hasEncodingKey())
     }
 
     /**
@@ -230,14 +230,23 @@ export class DataDefinition {
      * @returns {FieldTypeSchema[]}
      */
     fieldsToSchema(parents) {
+        /**
+         * @type {FieldTypeSchema[]} // couldn't make this be recognized as a generic type.  ???
+         */
         const fieldSchemas = []
 
         this.#fields.forEach((f) => {
-            const externalName = this.hasTags() ? f.tag : f.name.value
+            // change to encodingKey
+            const externalName = f.name.value
+            const encodingKey =
+                (f.hasEncodingKey() && f.encodedFieldName) || null
+
             const ts = expectSome(f.type.toSchema(parents))
             fieldSchemas.push({
                 name: externalName,
-                type: ts
+                type: ts,
+                // ??? push into the type instead? xxx it seems more clearly defined here
+                ...(encodingKey ? { encodingKey } : {})
             })
         })
 
@@ -258,7 +267,7 @@ export class DataDefinition {
          */
         let ir
 
-        if (this.hasTags()) {
+        if (this.usesEncodingKeys()) {
             ir = $`__core__mkNilPairData(())`
 
             for (let i = this.nFields - 1; i >= 0; i--) {
@@ -266,7 +275,7 @@ export class DataDefinition {
 
                 ir = $`__core__mkCons(
 					__core__mkPairData(
-						__core__bData(#${bytesToHex(encodeUtf8(f.tag))}),
+						__core__bData(#${bytesToHex(encodeUtf8(f.encodedFieldName))}),
 						${f.type.path}____to_data(${f.name.value})
 					),
 					${ir}
@@ -372,7 +381,7 @@ export class DataDefinition {
      * @returns {SourceMappedString}
      */
     toIR_show(baseName, isEnumMember = false) {
-        if (this.hasTags()) {
+        if (this.usesEncodingKeys()) {
             if (isEnumMember) {
                 throw new Error("unexpected")
             }
@@ -415,7 +424,7 @@ export class DataDefinition {
 									)()
 								}
 							)
-						}(__helios__common__cip68_field_safe(self, #${bytesToHex(encodeUtf8(f.tag))}))
+						}(__helios__common__cip68_field_safe(self, #${bytesToHex(encodeUtf8(f.encodedFieldName))}))
 					)
 				)`
             }
@@ -518,7 +527,7 @@ export class DataDefinition {
      * @returns {SourceMappedString}
      */
     toIR_is_valid_data(argIsConstrFields = false) {
-        if (this.hasTags()) {
+        if (this.usesEncodingKeys()) {
             const fields = this.#fields
 
             let ir = $``
@@ -527,14 +536,14 @@ export class DataDefinition {
                 if (i == 0) {
                     ir = $`__helios__common__test_cip68_field(
 						data,
-						__core__bData(#${bytesToHex(encodeUtf8(f.tag))}),
+						__core__bData(#${bytesToHex(encodeUtf8(f.encodedFieldName))}),
 						${f.type.path}__is_valid_data	
 					)`
                 } else {
                     ir = $`__core__ifThenElse(
 						__helios__common__test_cip68_field(
 							data,
-							__core__bData(#${bytesToHex(encodeUtf8(f.tag))}),
+							__core__bData(#${bytesToHex(encodeUtf8(f.encodedFieldName))}),
 							${f.type.path}__is_valid_data	
 						),
 						() -> {
@@ -611,8 +620,8 @@ export class DataDefinition {
 
             irInner = $`__core__ifThenElse(
                 __core__equalsData(
-                    __helios__common__cip68_field_internal(aFields, #${bytesToHex(encodeUtf8(f.tag))}),
-                    __helios__common__cip68_field_internal(bFields, #${bytesToHex(encodeUtf8(f.tag))})
+                    __helios__common__cip68_field_internal(aFields, #${bytesToHex(encodeUtf8(f.encodedFieldName))}),
+                    __helios__common__cip68_field_internal(bFields, #${bytesToHex(encodeUtf8(f.encodedFieldName))})
                 ),
                 () -> {${irInner}},
                 () -> {false}
@@ -645,8 +654,8 @@ export class DataDefinition {
 
             irInner = $`__core__ifThenElse(
                 __core__equalsData(
-                    __helios__common__cip68_field_internal(aFields, #${bytesToHex(encodeUtf8(f.tag))}),
-                    __helios__common__cip68_field_internal(bFields, #${bytesToHex(encodeUtf8(f.tag))})
+                    __helios__common__cip68_field_internal(aFields, #${bytesToHex(encodeUtf8(f.encodedFieldName))}),
+                    __helios__common__cip68_field_internal(bFields, #${bytesToHex(encodeUtf8(f.encodedFieldName))})
                 ),
                 () -> {${irInner}},
                 () -> {true}
@@ -671,7 +680,7 @@ export class DataDefinition {
      * @returns {SourceMappedString}
      */
     toIR_from_data_fields(path) {
-        if (this.hasTags()) {
+        if (this.usesEncodingKeys()) {
             //let ir = IR.new`(data) -> {__core__mkNilPairData(())}`;
 
             let ir = $`(data) -> {
@@ -778,13 +787,13 @@ export class DataDefinition {
          */
         const getterNames = []
 
-        if (this.hasTags()) {
+        if (this.usesEncodingKeys()) {
             for (let i = 0; i < this.#fields.length; i++) {
                 const f = this.#fields[i]
                 const key = `${path}__${f.name.value}`
 
                 // equalsData is much more efficient than first converting to byteArray
-                const getter = $`(self) -> {${f.type.path}__from_data(__helios__common__cip68_field(self, #${bytesToHex(encodeUtf8(f.tag))}))}`
+                const getter = $`(self) -> {${f.type.path}__from_data(__helios__common__cip68_field(self, #${bytesToHex(encodeUtf8(f.encodedFieldName))}))}`
 
                 map.set(key, getter)
                 getterNames.push(key)

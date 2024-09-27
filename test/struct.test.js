@@ -44,6 +44,12 @@ describe("Singleton", () => {
     })
 })
 
+// !!! todo: some tests for Cip68 struct in an enum variant (e.g. Datum)
+// and outside such a variant.  When the wrapper is eaten by the enum,
+// the raw struct should work.
+// When such an item is encoded outside the enum, the wrapper created
+// for that context should be tolerated fine by the on-chain code.
+
 describe("Pair[Int, Int]", () => {
     describe("Pair[Int, Int]::is_valid_data", () => {
         const runner = compileForRun(`testing pair_int_int_is_valid_data
