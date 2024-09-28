@@ -24,6 +24,8 @@ import { ImplDefinition } from "./ImplDefinition.js"
  * @typedef {import("../typecheck/index.js").GenericTypeProps} GenericTypeProps
  * @typedef {import("../typecheck/index.js").Type} Type
  * @typedef {import("../typecheck/index.js").TypeSchema} TypeSchema
+ * @typedef {import("../typecheck/index.js").StructTypeSchema} StructTypeSchema
+ * @typedef {import("../typecheck/index.js").StructFieldTypeSchema} StructFieldTypeSchema
  */
 
 /**
@@ -109,7 +111,7 @@ export class StructStatement extends Statement {
                     /**
                      * @param {Type} self
                      * @param {Set<string>} parents
-                     * @returns {TypeSchema}
+                     * @returns {StructTypeSchema}
                      */
                     genTypeSchema: (self, parents) => {
                         const internalTypeFields =

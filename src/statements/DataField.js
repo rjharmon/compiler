@@ -63,9 +63,6 @@ export class DataField extends NameTypePair {
         } else {
             const t = this.typeExpr.eval(scope)
 
-            // ??? push encodingKey into typeExpr ? else leave
-            // xxx probably best to keep it in fieldSchemas generated in parent DataDefinition,
-            //  as the encoding key isn't really type information.
             if (t.asDataType) {
                 const dt = t.asDataType
 

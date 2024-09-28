@@ -19,6 +19,7 @@ import { DataField } from "./DataField.js"
  * @typedef {import("../typecheck/index.js").DataType} DataType
  * @typedef {import("../typecheck/index.js").InstanceMembers} InstanceMembers
  * @typedef {import("../typecheck/index.js").FieldTypeSchema} FieldTypeSchema
+ * @typedef {import("../typecheck/index.js").StructFieldTypeSchema} StructFieldTypeSchema
  * @typedef {import("../typecheck/index.js").Type} Type
  * @typedef {import("../typecheck/index.js").TypeMembers} TypeMembers
  */
@@ -239,11 +240,11 @@ export class DataDefinition {
 
     /**
      * @param {Set<string>} parents
-     * @returns {FieldTypeSchema[]}
+     * @returns {(FieldTypeSchema | StructFieldTypeSchema)[]}
      */
     fieldsToSchema(parents) {
         /**
-         * @type {FieldTypeSchema[]} // couldn't make this be recognized as a generic type.  ???
+         * @type {FieldTypeSchema[]}
          */
         const fieldSchemas = []
 
@@ -257,8 +258,14 @@ export class DataDefinition {
             fieldSchemas.push({
                 name: externalName,
                 type: ts,
-                // ??? push into the type instead? xxx it seems more clearly defined here
-                ...(encodingKey ? { encodingKey } : {})
+                ...(encodingKey
+                    ? {
+                          // schemas use shorter key name to a) be concise in that context
+                          //  ... and b) add distinction for that separate context
+                          key: encodingKey
+                      }
+                    : {})
+                // ...  alt location for the comment?
             })
         })
 
