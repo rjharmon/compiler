@@ -51,11 +51,11 @@ export function parseDataFields(ctx, allowEncodingKeys = false) {
 
     /**
      * @param {Site} site
-     * @param {string} tag
+     * @param {string} key
      */
-    function assertUniqueTag(site, tag) {
-        if (encodingKeys.has(tag)) {
-            ctx.errors.syntax(site, `duplicate tag '${tag}'`)
+    function assertUniqueEncodingKey(site, key) {
+        if (encodingKeys.has(key)) {
+            ctx.errors.syntax(site, `duplicate encoding-key '${key}'`)
         }
     }
 
@@ -103,10 +103,10 @@ export function parseDataFields(ctx, allowEncodingKeys = false) {
                 if (!allowEncodingKeys) {
                     ctx.errors.syntax(
                         tag.site,
-                        "unexpected encodingKey tag in non-CIP68-struct context"
+                        "encodingKey tag not valid in this context"
                     )
                 } else {
-                    assertUniqueTag(tag.site, tag.value)
+                    assertUniqueEncodingKey(tag.site, tag.value)
                 }
                 encodingKey = tag.value
                 encodingKeys.set(name.value, tag)
@@ -114,7 +114,7 @@ export function parseDataFields(ctx, allowEncodingKeys = false) {
                 r.endMatch(false)
 
                 if (encodingKeys.size > 0) {
-                    assertUniqueTag(name.site, name.value)
+                    assertUniqueEncodingKey(name.site, name.value)
                 }
             }
 
