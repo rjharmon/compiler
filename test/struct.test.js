@@ -538,7 +538,7 @@ const longExample = `testing mStruct_encodings  //$$anchorLine: ${anchorLine}
 // When such an item is encoded outside the enum, the wrapper created
 // for that context should be tolerated fine by the on-chain code.
 
-describe.only("string-mapped struct encoding", () => {
+describe("string-mapped struct encoding", () => {
     const runner = compileForRun(longExample)
     describe("when in a Datum enum variant (Cip68 context)", () => {
         it("reads and writes Cip68-formatted data", () => {
@@ -579,6 +579,8 @@ describe.only("string-mapped struct encoding", () => {
         it("b", () => {})
     })
     describe("when used in a different position not relevant to Cip68", () => {
-        it("a2", () => {})
+        it("reads and writes Map[String]Data according to the struct definition", () => {
+            // todo            
+        })
     })
 })
