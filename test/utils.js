@@ -8,7 +8,8 @@ import {
     IntData,
     ListData,
     MapData,
-    UplcDataValue
+    UplcDataValue,
+    UplcProgramV2
 } from "@helios-lang/uplc"
 import { Program } from "../src/program/Program.js"
 
@@ -43,6 +44,13 @@ import { Program } from "../src/program/Program.js"
  */
 
 /**
+ * @typedef {(
+ *    (inputs: UplcData[], output: HeliosTestOutput) => void
+ *  ) & { program: Program }
+ * } RunnerFunction
+ */
+
+/**
  * @param {HeliosTest[]} testVector
  */
 export function compileAndRunMany(testVector) {
@@ -55,6 +63,10 @@ export function compileAndRunMany(testVector) {
  */
 export function compileAndRun(test) {
     it(test.description, () => {
+        /**
+         *
+         * @returns {[Program, UplcProgramV2]}
+         */
         const initialTest = () => {
             const program = new Program(test.main, {
                 moduleSources: test.modules,
@@ -130,7 +142,7 @@ export function compileAndRun(test) {
 /**
  * @param {string} mainSrc
  * @param {CompileForRunOptions} options
- * @returns {(inputs: UplcData[], output: HeliosTestOutput) => void}
+ * @returns { RunnerFunction }
  */
 export function compileForRun(mainSrc, options = {}) {
     const program = new Program(mainSrc, {
@@ -153,18 +165,44 @@ export function compileForRun(mainSrc, options = {}) {
     const uplc1 = program.compile(true)
     const hash1 = bytesToHex(uplc1.hash())
 
-    return (inputs, output) => {
+    /**
+     *
+     * @param {UplcData[]} inputs
+     * @param {HeliosTestOutput} output
+     * @returns {void}
+     */
+    const runner = (inputs, output) => {
+        if (!output)
+            throw new Error(
+                "must specify arg2: a HeliosTestOutput result to test against for this run"
+            )
         const args = inputs.map((d) => new UplcDataValue(d))
 
         const result0 = uplc0.eval(args)
 
-        resultEquals(result0, output)
+        try {
+            resultEquals(result0, output)
+        } catch (e) {
+            const failureLog =
+                result0.logs.map((l) => `---> ${l}`).join("\n") +
+                `\n---- ^^^ test failure log: ${program.name} (unoptimized) -----------\n`
+            console.error(failureLog)
+            e.NOTE = "See failure log above"
+            throw e
+        }
 
         if (hash1 != hash0) {
             const result1 = uplc1.eval(args)
-
-            resultEquals(result1, output)
-
+            try {
+                resultEquals(result1, output)
+            } catch (e) {
+                const failureLog =
+                    result1.logs.map((l) => `--->: > ${l}`).join("\n") +
+                    `\n---- ^^^ test failure log: ${program.name} (optimized) -----------\n`
+                console.error(failureLog)
+                e.NOTE = "See failure log above"
+                throw e
+            }
             // also make sure the costs and size are smaller
             const size0 = uplc0.toCbor().length
             const size1 = uplc1.toCbor().length
@@ -197,6 +235,8 @@ export function compileForRun(mainSrc, options = {}) {
             }
         }
     }
+    runner.program = program // expose for layering more functionality in contract-utils tests
+    return runner
 }
 
 /**
@@ -388,7 +428,14 @@ function cekResultToString(cekResult) {
         if (isString(output.right)) {
             return output.right
         } else if (output.right.kind == "data") {
-            return output.right.value.toString()
+            const str = output.right.value.toString()
+
+            debugger
+            if (!str) {
+                debugger
+                output.right.value.toString()
+            }
+            return str
         } else {
             return output.right.toString()
         }
@@ -400,6 +447,12 @@ function cekResultToString(cekResult) {
  * @returns {string}
  */
 function expectedResultToString(result) {
+    if (!result) {
+        debugger
+        throw new Error(
+            `can't convert ${result} to string for result comparison`
+        )
+    }
     if (typeof result == "string") {
         return result
     } else if ("error" in result) {

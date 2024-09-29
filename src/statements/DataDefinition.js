@@ -23,6 +23,18 @@ import { DataField } from "./DataField.js"
  * @typedef {import("../typecheck/index.js").TypeMembers} TypeMembers
  */
 
+// $testTrace`foo and bar${ir}`
+function $testTrace(traceMessage, ir) {
+    if (process.env.NODE_ENV != "test") {
+        throw new Error(`yikes`)
+        return ir
+    }
+
+    return $`__core__trace( "${traceMessage.replace(/"/g, '\\"')}", () -> { 
+        ${ir} 
+    })()`
+}
+
 /**
  * Base class for struct and enum member
  * @internal
@@ -71,7 +83,7 @@ export class DataDefinition {
         return this.#fields.map((f) => f.name.value)
     }
 
-    usesEncodingKeys() {
+    isMappedStruct() {
         return this.#fields.some((f) => f.hasEncodingKey())
     }
 
@@ -267,7 +279,7 @@ export class DataDefinition {
          */
         let ir
 
-        if (this.usesEncodingKeys()) {
+        if (this.isMappedStruct()) {
             ir = $`__core__mkNilPairData(())`
 
             for (let i = this.nFields - 1; i >= 0; i--) {
@@ -381,7 +393,7 @@ export class DataDefinition {
      * @returns {SourceMappedString}
      */
     toIR_show(baseName, isEnumMember = false) {
-        if (this.usesEncodingKeys()) {
+        if (this.isMappedStruct()) {
             if (isEnumMember) {
                 throw new Error("unexpected")
             }
@@ -424,7 +436,7 @@ export class DataDefinition {
 									)()
 								}
 							)
-						}(__helios__common__cip68_field_safe(self, #${bytesToHex(encodeUtf8(f.encodedFieldName))}))
+						}(__helios__common__mStruct_field_safe(self, #${bytesToHex(encodeUtf8(f.encodedFieldName))}))
 					)
 				)`
             }
@@ -527,21 +539,21 @@ export class DataDefinition {
      * @returns {SourceMappedString}
      */
     toIR_is_valid_data(argIsConstrFields = false) {
-        if (this.usesEncodingKeys()) {
+        if (this.isMappedStruct()) {
             const fields = this.#fields
 
             let ir = $``
 
             fields.forEach((f, i) => {
                 if (i == 0) {
-                    ir = $`__helios__common__test_cip68_field(
-						data,
+                    ir = $`__helios__common__test_mStruct_field(
+                        data,
 						__core__bData(#${bytesToHex(encodeUtf8(f.encodedFieldName))}),
-						${f.type.path}__is_valid_data	
-					)`
+                        ${f.type.path}__is_valid_data
+                    )`
                 } else {
                     ir = $`__core__ifThenElse(
-						__helios__common__test_cip68_field(
+						__helios__common__test_mStruct_field(
 							data,
 							__core__bData(#${bytesToHex(encodeUtf8(f.encodedFieldName))}),
 							${f.type.path}__is_valid_data	
@@ -557,7 +569,7 @@ export class DataDefinition {
             })
 
             return $`(data) -> {
-				${ir}
+                ${ir}
 			}`
         } else if (this.nFields == 1 && !argIsConstrFields) {
             return $`${this.#fields[0].type.path}__is_valid_data`
@@ -611,7 +623,7 @@ export class DataDefinition {
      * @param {Site} site
      * @returns {SourceMappedString}
      */
-    toIR_withTagsEq(site) {
+    toIR_mStructEq(site) {
         // the expected fields must exist in both
         let irInner = $`true`
 
@@ -620,8 +632,8 @@ export class DataDefinition {
 
             irInner = $`__core__ifThenElse(
                 __core__equalsData(
-                    __helios__common__cip68_field_internal(aFields, #${bytesToHex(encodeUtf8(f.encodedFieldName))}),
-                    __helios__common__cip68_field_internal(bFields, #${bytesToHex(encodeUtf8(f.encodedFieldName))})
+                    __helios__common__mStruct_field_internal(aFields, #${bytesToHex(encodeUtf8(f.encodedFieldName))}),
+                    __helios__common__mStruct_field_internal(bFields, #${bytesToHex(encodeUtf8(f.encodedFieldName))})
                 ),
                 () -> {${irInner}},
                 () -> {false}
@@ -630,8 +642,8 @@ export class DataDefinition {
 
         let irOuter = $(
             `(a, b) -> {
-            aFields = __core__unMapData(__core__headList(__core__sndPair(__core__unConstrData(a))));
-            bFields = __core__unMapData(__core__headList(__core__sndPair(__core__unConstrData(b))));
+            aFields = __core__unMapData(a);
+            bFields = __core__unMapData(b);
 
             ${irInner}
         }`,
@@ -654,8 +666,8 @@ export class DataDefinition {
 
             irInner = $`__core__ifThenElse(
                 __core__equalsData(
-                    __helios__common__cip68_field_internal(aFields, #${bytesToHex(encodeUtf8(f.encodedFieldName))}),
-                    __helios__common__cip68_field_internal(bFields, #${bytesToHex(encodeUtf8(f.encodedFieldName))})
+                    __helios__common__mStruct_field_internal(aFields, #${bytesToHex(encodeUtf8(f.encodedFieldName))}),
+                    __helios__common__mStruct_field_internal(bFields, #${bytesToHex(encodeUtf8(f.encodedFieldName))})
                 ),
                 () -> {${irInner}},
                 () -> {true}
@@ -664,8 +676,8 @@ export class DataDefinition {
 
         let irOuter = $(
             `(a, b) -> {
-            aFields = __core__unMapData(__core__headList(__core__sndPair(__core__unConstrData(a))));
-            bFields = __core__unMapData(__core__headList(__core__sndPair(__core__unConstrData(b))));
+            aFields = __core__unMapData(a);
+            bFields = __core__unMapData(b);
 
             ${irInner}
         }`,
@@ -680,7 +692,7 @@ export class DataDefinition {
      * @returns {SourceMappedString}
      */
     toIR_from_data_fields(path) {
-        if (this.usesEncodingKeys()) {
+        if (this.isMappedStruct()) {
             //let ir = IR.new`(data) -> {__core__mkNilPairData(())}`;
 
             let ir = $`(data) -> {
@@ -708,7 +720,7 @@ export class DataDefinition {
 							__core__bData(#${bytesToHex(textToBytes(f.tag))}),
 							${ftPath}____to_data(
 								${ftPath}__from_data(
-									__helios__common__cip68_field(
+									__helios__common__mStruct_field(
 										data, 
 										#${bytesToHex(textToBytes(f.tag))}
 									)
@@ -787,13 +799,13 @@ export class DataDefinition {
          */
         const getterNames = []
 
-        if (this.usesEncodingKeys()) {
+        if (this.isMappedStruct()) {
             for (let i = 0; i < this.#fields.length; i++) {
                 const f = this.#fields[i]
                 const key = `${path}__${f.name.value}`
 
                 // equalsData is much more efficient than first converting to byteArray
-                const getter = $`(self) -> {${f.type.path}__from_data(__helios__common__cip68_field(self, #${bytesToHex(encodeUtf8(f.encodedFieldName))}))}`
+                const getter = $`(self) -> {${f.type.path}__from_data(__helios__common__mStruct_field(self, #${bytesToHex(encodeUtf8(f.encodedFieldName))}))}`
 
                 map.set(key, getter)
                 getterNames.push(key)

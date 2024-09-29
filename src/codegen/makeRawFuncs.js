@@ -685,17 +685,17 @@ export function makeRawFunctions(simplify, isTestnet) {
     )
     add(
         new RawFunc(
-            "__helios__common__cip68_field",
+            "__helios__common__mStruct_field",
             `(self, name) -> {
-		map = __core__unMapData(__core__headList(__core__sndPair(__core__unConstrData(self))));
-		__helios__common__cip68_field_internal(map, name)
+		map = __core__unMapData(self)));
+		__helios__common__mStruct_field_internal(map, name)
 	}`
         )
     )
     // map is expected to already have been extracted
     add(
         new RawFunc(
-            "__helios__common__cip68_field_internal",
+            "__helios__common__mStruct_field_internal",
             `(map, name) -> {
 		name_data = __core__bData(name);
 		recurse = (recurse, map) -> {
@@ -735,7 +735,7 @@ export function makeRawFunctions(simplify, isTestnet) {
     // map is expected to already have been extracted
     add(
         new RawFunc(
-            "__helios__common__cip68_field_safe",
+            "__helios__common__mStruct_field_safe",
             `(map, name) -> {
 		name = __core__bData(name);
 		recurse = (recurse, map) -> {
@@ -763,19 +763,15 @@ export function makeRawFunctions(simplify, isTestnet) {
 	}`
         )
     )
+    // ?? map has to be unMapped?
     add(
         new RawFunc(
-            "__helios__common__test_cip68_field",
+            "__helios__common__test_mStruct_field",
             `(self, name, inner_test) -> {
 		__core__chooseData(
 			self,
 			() -> {
-				fields = __core__sndPair(__core__unConstrData__safe(self));
-				__core__chooseList(
-					fields,
-					() -> {false},
-					() -> {
-						head = __core__headList__safe(fields);
+						head = __core__headList__safe(self);
 						__core__chooseData(
 							head,
 							() -> {false},
@@ -806,8 +802,6 @@ export function makeRawFunctions(simplify, isTestnet) {
 							() -> {false},
 							() -> {false},
 							() -> {false}
-						)()
-					}
 				)()
 			},
 			() -> {false},
