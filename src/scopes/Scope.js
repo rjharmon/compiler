@@ -226,10 +226,17 @@ export class Scope extends Common {
     assertAllUsed(onlyIfStrict = true) {
         if (!onlyIfStrict || this.isStrict()) {
             for (let [name, entity, used] of this.#values) {
-                if (!(entity instanceof Scope) && !used) {
+                const flaggedUnused = name.value.startsWith("_")
+                if (!used && !(entity instanceof Scope) && !flaggedUnused) {
                     throw CompilerError.reference(
                         name.site,
                         `'${name.toString()}' unused`
+                    )
+                }
+                if (flaggedUnused && used) {
+                    throw CompilerError.reference(
+                        name.site,
+                        `_-prefixed variable '${name.toString()}' must be unused`
                     )
                 }
             }

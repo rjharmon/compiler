@@ -4,24 +4,27 @@ import { compileAndRunMany, int } from "./utils.js"
 describe("Assign", () => {
     compileAndRunMany([
         {
-            description: "basic assignment ok",
-            main: `testing basic_assign
+            description: "underscore-prefix makes unused variables ok",
+            main: `testing unused_variables
             func main(a: Int) -> Int {
-                b: Int = a;
-                b + a
+                _ = 1;
+                _also_unused = 2;
+                a + 1
             }`,
             inputs: [int(1)],
             output: int(2)
         },
         {
-            description: "rhs type can be inferred",
-            main: `testing infer_assign
+            description: "used variables must not be underscore-prefixed",
+            fails: /_-prefixed variable '_thing' must be unused/,
+            main: `testing unused_variables
             func main(a: Int) -> Int {
-                b = a;
-                b + a
+                _ = 1;
+                _thing = 2;
+                a + _thing
             }`,
             inputs: [int(1)],
-            output: int(2)
+            output: int(1)
         },
         {
             description: "rhs enum variant only can be checked",
