@@ -24,18 +24,6 @@ import { DataField } from "./DataField.js"
  * @typedef {import("../typecheck/index.js").TypeMembers} TypeMembers
  */
 
-// $testTrace`foo and bar${ir}`
-function $testTrace(traceMessage, ir) {
-    if (process.env.NODE_ENV != "test") {
-        throw new Error(`yikes`)
-        return ir
-    }
-
-    return $`__core__trace( "${traceMessage.replace(/"/g, '\\"')}", () -> { 
-        ${ir} 
-    })()`
-}
-
 /**
  * Base class for struct and enum member
  * @internal

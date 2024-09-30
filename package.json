@@ -17,11 +17,11 @@
         "pretest": "pnpm test:version && pnpm run test:pretty",
         "test": "pnpm run test:types && pnpm run test:suite",
         "test:pretty": "prettier . --check",
-        "test:suite": "NODE_ENV=test node --stack-trace-limit=50 --test",
+        "test:suite": "node --stack-trace-limit=50 --test",
         "test:types": "tsc -p jsconfig.json --noEmit",
         "test:version": "node -e \"import('./src/index.js').then(m => {if (m.VERSION != process.env.npm_package_version) {throw new Error(\\\"version mismatch\\\")}})\"",
-        "testing": "NODE_ENV=test node --stack-trace-limit=50 --test --watch",
-        "testing:debug": "NODE_ENV=test node --stack-trace-limit=50 --inspect-wait --test --watch"
+        "testing": "HL_TEST_TRACE=ok node --stack-trace-limit=50 --test --watch",
+        "testing:debug": "HL_TEST_TRACE=ok node --stack-trace-limit=50 --inspect-wait --test --watch"
     },
     "repository": {
         "type": "git",

@@ -12,6 +12,7 @@ import {
     UplcProgramV2
 } from "@helios-lang/uplc"
 import { Program } from "../src/program/Program.js"
+import { $ } from "@helios-lang/ir"
 
 /**
  * @typedef {import("@helios-lang/codec-utils").ByteArrayLike} ByteArrayLike
@@ -22,6 +23,32 @@ import { Program } from "../src/program/Program.js"
 /**
  * @typedef {{error: string} | UplcData | string} HeliosTestOutput
  */
+
+// $testTrace`foo and bar${ir}`
+export function $testTrace(traceMessage, ...args) {
+    const ir = args.pop()
+    if (args.length > 1) {
+        throw new Error(
+            `only 2 or 3 args for $testTrace(message [String], [extraTraceExpr [String expr]], nestedIr), please`
+        )
+    }
+    let [extraTraceExpr] = args
+    if (!process.env.HL_TEST_TRACE) {
+        throw new Error(
+            `use of $testTrace() should be limited to local troubleshooting using 'pnpm testing'`
+        )
+    }
+    let tmExpr = `"${traceMessage.replace(/"/g, '\\"')}"`
+    if (extraTraceExpr) {
+        tmExpr = `__helios__string____add(
+            ${tmExpr}, ${extraTraceExpr})`
+    }
+    const t = $`__core__trace(${tmExpr}, () -> { 
+        ${ir} 
+    })()`
+    // console.log(t.toString())
+    return t
+}
 
 /**
  * @typedef {{

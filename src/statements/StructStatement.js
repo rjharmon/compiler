@@ -117,7 +117,7 @@ export class StructStatement extends Statement {
                         const internalTypeFields =
                             this.#dataDef.fieldsToSchema(parents)
 
-                        return {
+                        return /* @type {StructTypeSchema} */ {
                             kind: "struct",
                             format: this.#dataDef.isMappedStruct()
                                 ? "map"

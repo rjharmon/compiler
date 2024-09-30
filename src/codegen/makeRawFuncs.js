@@ -2,6 +2,8 @@ import { REAL_PRECISION } from "@helios-lang/compiler-utils"
 import { expectSome } from "@helios-lang/type-utils"
 import { FTPP, TTPP } from "./ParametricName.js"
 import { RawFunc } from "./RawFunc.js"
+import { $testTrace } from "../../test/utils.js"
+import { $ } from "@helios-lang/ir"
 
 /**
  * Initializes the db containing all the builtin functions
@@ -770,17 +772,25 @@ export function makeRawFunctions(simplify, isTestnet) {
             `(self, name, inner_test) -> {
 		__core__chooseData(
 			self,
+			() -> {false},
 			() -> {
-						head = __core__headList__safe(self);
+						head = self;
 						__core__chooseData(
 							head,
 							() -> {false},
 							() -> {
-								map = __core__unMapData__safe(head);
+								map = ${$testTrace(
+                                    "unMap mStruct to find ",
+                                    // $`__core__decodeUtf8(__core__consByteString(__core__unBData__safe(name)))`,
+                                    $`__core__unMapData__safe(head)`
+                                )};
+
 								recurse = (recurse, map) -> {
 									__core__chooseList(
-										map,
-										() -> {false},
+										${$testTrace("chooseList/recurse", $`map`)},
+										() -> {
+                                             ${$testTrace("field not found", $`name`, $`false`)} 
+                                         },
 										() -> {
 											head = __core__headList__safe(map);
 											key = __core__fstPair(head);
@@ -788,7 +798,7 @@ export function makeRawFunctions(simplify, isTestnet) {
 											__core__ifThenElse(
 												__core__equalsData(key, name),
 												() -> {
-													inner_test(value)
+													${$testTrace("inner test", $`name`, $`inner_test(value)`)}
 												},
 												() -> {
 													recurse(recurse, __core__tailList__safe(map))
@@ -804,7 +814,6 @@ export function makeRawFunctions(simplify, isTestnet) {
 							() -> {false}
 				)()
 			},
-			() -> {false},
 			() -> {false},
 			() -> {false},
 			() -> {false}
