@@ -164,7 +164,7 @@ export class StructStatement extends Statement {
      * @param {ToIRContext} ctx
      * @param {Definitions} map
      */
-    toIR_withTagsEq(ctx, map) {
+    toIR_mStructEq(ctx, map) {
         const ir = this.#dataDef.toIR_mStructEq(this.site)
 
         map.set(`${this.path}____eq`, ir)
@@ -174,7 +174,7 @@ export class StructStatement extends Statement {
      * @param {ToIRContext} ctx
      * @param {Definitions} map
      */
-    toIR_withTagsNeq(ctx, map) {
+    toIR_mStructNeq(ctx, map) {
         const ir = this.#dataDef.toIR_withTagsNeq(this.site)
 
         map.set(`${this.path}____neq`, ir)
@@ -184,9 +184,9 @@ export class StructStatement extends Statement {
      * @param {ToIRContext} ctx
      * @param {Definitions} map
      */
-    toIR_withTags(ctx, map) {
-        this.toIR_withTagsEq(ctx, map)
-        this.toIR_withTagsNeq(ctx, map)
+    toIR_mStruct(ctx, map) {
+        this.toIR_mStructEq(ctx, map)
+        this.toIR_mStructNeq(ctx, map)
 
         map.set(
             `${this.path}__serialize`,
@@ -237,7 +237,7 @@ export class StructStatement extends Statement {
      * @param {ToIRContext} ctx
      * @param {Definitions} map
      */
-    toIR_withoutTags(ctx, map) {
+    toIR_fStruct(ctx, map) {
         const implPath =
             this.#dataDef.nFields == 1
                 ? this.#dataDef.getFieldType(0).path
@@ -322,9 +322,9 @@ export class StructStatement extends Statement {
         )
 
         if (this.#dataDef.isMappedStruct()) {
-            this.toIR_withTags(ctx, map)
+            this.toIR_mStruct(ctx, map)
         } else {
-            this.toIR_withoutTags(ctx, map)
+            this.toIR_fStruct(ctx, map)
         }
 
         // super.toIR adds __new and copy, which might depend on __to_data, so must come after
