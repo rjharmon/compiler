@@ -24,7 +24,14 @@ import { $ } from "@helios-lang/ir"
  * @typedef {{error: string} | UplcData | string} HeliosTestOutput
  */
 
-// $testTrace`foo and bar${ir}`
+/**
+ * Runs the nested IR expression after emitting a trace message.  If the 
+ * optional second arg contains an IR string expression, it is evaluated 
+ * and added to the trace message.
+ * @example
+ * $testTrace(`some Message`, $`...nestedIrExpression`)
+ * $testTrace(`some Message`, $`optionalIrStringExpression`, $`...nestedIrExpression`)
+ */
 export function $testTrace(traceMessage, ...args) {
     const ir = args.pop()
     if (args.length > 1) {
@@ -38,7 +45,7 @@ export function $testTrace(traceMessage, ...args) {
             `use of $testTrace() should be limited to local troubleshooting using 'pnpm testing'`
         )
     }
-    let tmExpr = `"${traceMessage.replace(/"/g, '\\"')}"`
+    let tmExpr = `"  -- ${traceMessage.replace(/"/g, '\\"')}"`
     if (extraTraceExpr) {
         tmExpr = `__helios__string____add(
             ${tmExpr}, ${extraTraceExpr})`

@@ -19,7 +19,6 @@ import { DataField } from "./DataField.js"
  * @typedef {import("../typecheck/index.js").DataType} DataType
  * @typedef {import("../typecheck/index.js").InstanceMembers} InstanceMembers
  * @typedef {import("../typecheck/index.js").FieldTypeSchema} FieldTypeSchema
- * @typedef {import("../typecheck/index.js").StructFieldTypeSchema} StructFieldTypeSchema
  * @typedef {import("../typecheck/index.js").Type} Type
  * @typedef {import("../typecheck/index.js").TypeMembers} TypeMembers
  */
@@ -228,7 +227,7 @@ export class DataDefinition {
 
     /**
      * @param {Set<string>} parents
-     * @returns {(FieldTypeSchema | StructFieldTypeSchema)[]}
+     * @returns {(FieldTypeSchema)[]}
      */
     fieldsToSchema(parents) {
         /**
@@ -289,19 +288,9 @@ export class DataDefinition {
 				)`
             }
 
-            // TODO: according to https://cips.cardano.org/cips/cip68/#metadata an additional 'extra' (which can be unit)  should be added. Is that really necessary?
-            ir = $`__core__constrData(
-				0,
-				__core__mkCons(
-					__core__mapData(${ir}),
-					__core__mkCons(
-						__core__iData(1),
-						__core__mkNilData(())
-					)
-				)
-			)`
-
-            ir = $`(${$(this.#fields.map((f) => $(f.name.value))).join(", ")}) -> {${ir}}`
+            ir = $`(${$(this.#fields.map((f) => $(f.name.value))).join(", ")}) -> {
+                __core__mapData(${ir})
+            }`
         } else if (this.nFields == 1) {
             if (isConstr) {
                 ir = $(
@@ -563,9 +552,10 @@ export class DataDefinition {
                 }
             })
 
-            return $`(data) -> {
+            return $`(data) -> { 
                 ${ir}
-			}`
+            }`
+            
         } else if (this.nFields == 1 && !argIsConstrFields) {
             return $`${this.#fields[0].type.path}__is_valid_data`
         } else {
@@ -622,9 +612,13 @@ export class DataDefinition {
         // the expected fields must exist in both
         let irInner = $`true`
 
+        // same as reversing the fields:
+        const n = this.#fields.length-1
         for (let i = 0; i < this.#fields.length; i++) {
-            const f = this.#fields[i]
-
+            const f = this.#fields[n-i]
+            // builds the innermost field comparison from the LAST field,
+            // so the outermost is likely to be the cheapest to find, given 
+            // the fields are stored in the same order they're defined in the struct.
             irInner = $`__core__ifThenElse(
                 __core__equalsData(
                     __helios__common__mStruct_field_internal(aFields, #${bytesToHex(encodeUtf8(f.encodedFieldName))}),
@@ -632,40 +626,6 @@ export class DataDefinition {
                 ),
                 () -> {${irInner}},
                 () -> {false}
-            )()`
-        }
-
-        let irOuter = $(
-            `(a, b) -> {
-            aFields = __core__unMapData(a);
-            bFields = __core__unMapData(b);
-
-            ${irInner}
-        }`,
-            site
-        )
-
-        return irOuter
-    }
-
-    /**
-     * @param {Site} site
-     * @returns {SourceMappedString}
-     */
-    toIR_withTagsNeq(site) {
-        // the expected fields must exist in both
-        let irInner = $`false`
-
-        for (let i = 0; i < this.#fields.length; i++) {
-            const f = this.#fields[i]
-
-            irInner = $`__core__ifThenElse(
-                __core__equalsData(
-                    __helios__common__mStruct_field_internal(aFields, #${bytesToHex(encodeUtf8(f.encodedFieldName))}),
-                    __helios__common__mStruct_field_internal(bFields, #${bytesToHex(encodeUtf8(f.encodedFieldName))})
-                ),
-                () -> {${irInner}},
-                () -> {true}
             )()`
         }
 

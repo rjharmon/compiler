@@ -2,7 +2,6 @@ import { REAL_PRECISION } from "@helios-lang/compiler-utils"
 import { expectSome } from "@helios-lang/type-utils"
 import { FTPP, TTPP } from "./ParametricName.js"
 import { RawFunc } from "./RawFunc.js"
-import { $testTrace } from "../../test/utils.js"
 import { $ } from "@helios-lang/ir"
 
 /**
@@ -689,12 +688,14 @@ export function makeRawFunctions(simplify, isTestnet) {
         new RawFunc(
             "__helios__common__mStruct_field",
             `(self, name) -> {
-		map = __core__unMapData(self)));
-		__helios__common__mStruct_field_internal(map, name)
+		__helios__common__mStruct_field_internal(
+			__core__unMapData(self), 
+			name
+		)
 	}`
         )
     )
-    // map is expected to already have been extracted
+    // map's underlying list was already extracted
     add(
         new RawFunc(
             "__helios__common__mStruct_field_internal",
@@ -705,12 +706,13 @@ export function makeRawFunctions(simplify, isTestnet) {
 				map,
 				() -> {
 					__helios__error(
-						__core__appendString(
+                        __core__appendString(
 							"field ",
 							__core__appendString(
-								__helios__bytearray__show(name)(),
-								" not found in struct"
-							)
+								__core__decodeUtf8(__core__unBData(name)),
+                                // __core__decodeUtf8(__core__unBData__safe(name)),
+								" not found in mStruct"
+							) 
 						)
 					)
 				},
@@ -765,7 +767,7 @@ export function makeRawFunctions(simplify, isTestnet) {
 	}`
         )
     )
-    // ?? map has to be unMapped?
+    //checks for the presence of a field in an mStruct (not its inner list)
     add(
         new RawFunc(
             "__helios__common__test_mStruct_field",
@@ -774,23 +776,18 @@ export function makeRawFunctions(simplify, isTestnet) {
 			self,
 			() -> {false},
 			() -> {
-						head = self;
-						__core__chooseData(
-							head,
-							() -> {false},
-							() -> {
-								map = ${$testTrace(
-                                    "unMap mStruct to find ",
-                                    // $`__core__decodeUtf8(__core__consByteString(__core__unBData__safe(name)))`,
-                                    $`__core__unMapData__safe(head)`
-                                )};
-
+						map = __core__unMapData__safe(self);
 								recurse = (recurse, map) -> {
-									__core__chooseList(
-										${$testTrace("chooseList/recurse", $`map`)},
+									__core__chooseList(map,
 										() -> {
-                                             ${$testTrace("field not found", $`name`, $`false`)} 
-                                         },
+											__core__trace(
+												__core__appendString(
+													"Warning: field not found in mStruct: ",
+													__core__decodeUtf8(__core__unBData(name))
+												),
+												() -> {false}
+											)()
+										},
 										() -> {
 											head = __core__headList__safe(map);
 											key = __core__fstPair(head);
@@ -798,7 +795,7 @@ export function makeRawFunctions(simplify, isTestnet) {
 											__core__ifThenElse(
 												__core__equalsData(key, name),
 												() -> {
-													${$testTrace("inner test", $`name`, $`inner_test(value)`)}
+													inner_test(value)
 												},
 												() -> {
 													recurse(recurse, __core__tailList__safe(map))
@@ -808,11 +805,6 @@ export function makeRawFunctions(simplify, isTestnet) {
 									)()
 								};
 								recurse(recurse, map)
-							},
-							() -> {false},
-							() -> {false},
-							() -> {false}
-				)()
 			},
 			() -> {false},
 			() -> {false},

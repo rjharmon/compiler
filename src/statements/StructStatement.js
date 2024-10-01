@@ -25,7 +25,6 @@ import { ImplDefinition } from "./ImplDefinition.js"
  * @typedef {import("../typecheck/index.js").Type} Type
  * @typedef {import("../typecheck/index.js").TypeSchema} TypeSchema
  * @typedef {import("../typecheck/index.js").StructTypeSchema} StructTypeSchema
- * @typedef {import("../typecheck/index.js").StructFieldTypeSchema} StructFieldTypeSchema
  */
 
 /**
@@ -175,9 +174,16 @@ export class StructStatement extends Statement {
      * @param {Definitions} map
      */
     toIR_mStructNeq(ctx, map) {
-        const ir = this.#dataDef.toIR_withTagsNeq(this.site)
-
-        map.set(`${this.path}____neq`, ir)
+		// simple negation of __eq
+        map.set(`${this.path}____neq`, 
+			$`(a, b) -> {
+					__core__ifThenElse(
+						${this.path}____eq(a, b), 
+						()->{false}, 
+						()->{true}
+					)()
+			}`
+		)
     }
 
     /**
@@ -226,10 +232,16 @@ export class StructStatement extends Statement {
             )
         }
 
-        // TODO: this is wrong
         map.set(
             `${this.path}__from_data_safe`,
-            $(`__helios__option__SOME_FUNC`, this.site)
+
+            $(`(data) -> {
+                __core__ifThenElse(
+                    ${this.path}__is_valid_data(data),
+                    () -> { __helios__option__SOME_FUNC(data) },
+                    () -> { __helios__option__NONE_FUNC }
+                )()
+            }`, this.site)
         )
     }
 
