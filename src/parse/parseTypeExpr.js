@@ -28,11 +28,9 @@ import { ParseContext } from "./ParseContext.js"
 
 /**
  * @param {ParseContext} ctx
- * @param {string} [fieldTag]
  * @returns {Expr}
  */
-//xxx not this.
-export function parseTypeExpr(ctx, fieldTag) {
+export function parseTypeExpr(ctx) {
     /**
      * @type {Option<Expr>}
      */

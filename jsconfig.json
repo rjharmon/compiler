@@ -16,7 +16,6 @@
     "include": [
         "src/**/*.js",
         "node_modules/@helios-lang/type-utils",
-        "src/testUtils.d.ts",
         "test/utils.js"
     ]
 }

@@ -64,10 +64,10 @@ export function parseDataFields(ctx, allowEncodingKeys = false) {
      * @returns {Option<StringLiteral>}
      */
     function getFieldEncodingKey(fieldName) {
-        const tag = encodingKeys.get(fieldName.value)
+        const fieldKey = encodingKeys.get(fieldName.value)
 
-        if (tag) {
-            return tag
+        if (fieldKey) {
+            return fieldKey
         } else if (encodingKeys.size == 0) {
             return None
         } else if (encodingKeys.has(fieldName.value)) {

@@ -63,9 +63,6 @@ export function parseStructStatement(ctx) {
         r.endMatch()
     }
 
-    // if (fields.any((f) => f.hasEncodingKey())) {
-    // return new sMapStructStatement(ctx, name, parameters, fields, impl)
-    // }
     return new StructStatement(ctx.currentSite, name, parameters, fields, impl)
 }
 
