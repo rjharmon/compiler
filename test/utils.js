@@ -215,7 +215,10 @@ export function compileForRun(mainSrc, options = {}) {
         const result0 = uplc0.eval(args)
 
         try {
+            console.log("result0", result0)
+            console.log("output", output)
             resultEquals(result0, output)
+            console.log("resultEquals passed")
         } catch (e) {
             const failureLog =
                 result0.logs.map((l) => `---> ${l}`).join("\n") +
@@ -457,7 +460,7 @@ function cekResultToString(cekResult) {
 
     if (isLeft(output)) {
         console.error(output.left.error)
-        return "error"
+        return "error" + output.left.error
     } else {
         if (isString(output.right)) {
             return output.right
